@@ -1,0 +1,5 @@
+# Ignore certain .py files
+roughness.py
+
+# Image files
+*.png
