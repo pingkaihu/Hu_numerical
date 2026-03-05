@@ -1,6 +1,5 @@
 import sys
 import glob
-import cv2
 import numpy as np
 import scipy.fftpack as fft
 from matplotlib import pyplot as plt

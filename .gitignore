@@ -2,4 +2,7 @@
 roughness.py
 
 # Image files
+*.jpg
+*.jpeg
 *.png
+*.tiff
