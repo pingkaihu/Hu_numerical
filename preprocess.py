@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 import numpy as np
 
 # ─── Configuration ────────────────────────────────────────────────────────────
@@ -10,7 +10,7 @@ OUTPUT_CSV = "test_data_processed.csv"
 # Float columns to scale with StandardScaler (e.g. 'A01', 'A02', ...)
 FLOAT_COLS = ["x", "y", "value"]
 
-# String columns to encode with OneHotEncoder (e.g. 'B01', 'B02', ...)
+# String columns to encode with OneHotEncoder (expands into N binary columns).
 # For each column you can define the allowed categories explicitly.
 # Set to None to infer categories automatically from the data.
 STRING_COLS = {
@@ -18,10 +18,18 @@ STRING_COLS = {
     # "B02": None,                     # infer from data
 }
 
+# String columns to encode with LabelEncoder (replaces column with a single integer).
+# Provide an ordered list to control integer assignment; None = alphabetical order.
+LABEL_COLS = {
+    # "B03": ["low", "mid", "high"],   # explicit order: low→0, mid→1, high→2
+    # "B04": None,                     # infer order from data (alphabetical)
+}
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def preprocess(input_csv: str, output_csv: str,
-               float_cols: list, string_cols: dict) -> pd.DataFrame:
+               float_cols: list, string_cols: dict,
+               label_cols: dict) -> pd.DataFrame:
 
     df = pd.read_csv(input_csv)
     print(f"Loaded '{input_csv}': {df.shape[0]} rows × {df.shape[1]} cols")
@@ -59,11 +67,25 @@ def preprocess(input_csv: str, output_csv: str,
     else:
         print("No string columns to encode.")
 
+    # --- LabelEncoder on label columns ---
+    valid_label = {c: cats for c, cats in label_cols.items() if c in df.columns}
+    if valid_label:
+        for col, categories in valid_label.items():
+            if categories is not None:
+                cat_map = {v: i for i, v in enumerate(categories)}
+                result[col] = df[col].map(cat_map)
+            else:
+                le = LabelEncoder()
+                result[col] = le.fit_transform(df[col].astype(str))
+            print(f"LabelEncoder applied to '{col}'")
+    else:
+        print("No label columns to encode.")
+
     result.to_csv(output_csv, index=False)
     print(f"Saved to '{output_csv}'")
     return result
 
 
 if __name__ == "__main__":
-    df_out = preprocess(INPUT_CSV, OUTPUT_CSV, FLOAT_COLS, STRING_COLS)
+    df_out = preprocess(INPUT_CSV, OUTPUT_CSV, FLOAT_COLS, STRING_COLS, LABEL_COLS)
     print(df_out.head())
